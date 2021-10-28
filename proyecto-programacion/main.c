@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <termios.h>
 #define clear() printf("\033[H\033[J")
+#define HL_RED  "\33[38;5;0;48;5;160m"
+#define HL_YELLOW  "\33[38;5;0;48;5;220m"
+#define HL_NO     "\33[m"
 
 static struct termios old, current;
 
@@ -27,11 +30,19 @@ int ScrPrnt(char memoria[43], int longitud_x, int longitud_total){
       x_contador = 0;
     };
     switch(memoria[i]){
-        case '1'  : printf("[\033[0;31mR\033[0;0m]   ");
+        case '1'  : printf("[\033[0;91mR\033[0;0m]   ");
                     x_contador++;
                     i++;
                     break;
-        case '2'  : printf("[\033[0;33mA\033[0;0m]   ");
+        case '2'  : printf("[\033[0;93mA\033[0;0m]   ");
+                    x_contador++;
+                    i++;
+                    break;
+        case '3'  : printf(HL_RED"[R]\33[m   \033[0;0m");
+                    x_contador++;
+                    i++;
+                    break;
+        case '4'  : printf(HL_YELLOW"[A]\33[m   \033[0;0m");
                     x_contador++;
                     i++;
                     break;
@@ -43,7 +54,7 @@ int ScrPrnt(char memoria[43], int longitud_x, int longitud_total){
   printf("\n---------------------------------------\n");
   x_contador = 0;
   while (x_contador < longitud_x){
-      printf("\033[0;34m|%d|   \033[0;0m", x_contador+1);
+      printf("\033[0;94m|%d|   \033[0;0m", x_contador+1);
       x_contador++;
   };
   printf("\n");
@@ -51,28 +62,29 @@ int ScrPrnt(char memoria[43], int longitud_x, int longitud_total){
   return(i);
 };
 
-int KbdInput(char Teclado, int Turno, int longitud_x){
+int KbdInput(char Teclado, int Turno, int longitud_x, int contador_partida){
     int i = 0;
     int a = 0;
+    Teclado = 0;
     printf("\n");
     switch (Turno){
-          case  0   : printf("Turno de \033[0;31mRojo\033[0;0m:");
+          case  0   : printf("Turno de \033[0;91mRojo\033[0;0m:");
                       break;
-          case  1   : printf("Turno de \033[0;33mAmarillo\033[0;0m:");
+          case  1   : printf("Turno de \033[0;93mAmarillo\033[0;0m:");
                       break;
     };
-    printf("\n-------------------\nIngrese una fila para tirar una ficha\n\033[0;36mFila = \033[0;0m");
+    printf("\n-------------------\nIngrese una columna para tirar una ficha\n\033[0;36mFila = \033[0;0m");
     while(i == 0){
       Teclado = getch();
       a = Teclado - 0x30;
       if (a < 1){
           i = 0;
           printf("\n\033[0;31m¡Valor inválido!\033[0;0m:");
-          printf("\n-------------------\nIngrese una fila para tirar una ficha\n\033[0;36mFila = \033[0;0m");
+          printf("\n-------------------\nIngrese una columna para tirar una ficha\n\033[0;36mFila = \033[0;0m");
       } else if (a > longitud_x){
         i = 0;
         printf("\n\033[0;31m¡Valor inválido!\033[0;0m:");
-        printf("\n-------------------\nIngrese una fila para tirar una ficha\n\033[0;36mFila = \033[0;0m");
+        printf("\n-------------------\nIngrese una columna para tirar una ficha\n\033[0;36mFila = \033[0;0m");
       } else {
         i = 1;
       };
@@ -134,6 +146,10 @@ int Logica_interna (char memoria[43], int longitud_x, int posicion, int Turno){
   int b = 0;
   int c = 0;
   int d = 0;
+  int e = 0;
+  int g = 0;
+  int h = 0;
+  int lado = 0;
   int ganador = 0;
   int memoria_posicion = 0;
   memoria_posicion = posicion;
@@ -159,16 +175,20 @@ int Logica_interna (char memoria[43], int longitud_x, int posicion, int Turno){
                       ganador = 1;
                       i=254;
                       j=254;
+                      lado = 1;
                        break;
           case 0xAA : // printf("amarillo ganó");
                       ganador = 2;
                       i=254;
                       j=254;
+                      lado = 1;
                       break;
   };
   j++;
+  h = posicion;
   posicion += 1;
   };
+  g = b;
   // detectar verticalmente
   j = 0;
   posicion = memoria_posicion;
@@ -192,18 +212,59 @@ int Logica_interna (char memoria[43], int longitud_x, int posicion, int Turno){
       };
       j++;
   };
+  // Detectar si está lleno
+  for (int t = 0; t < longitud_x; t++) {
+    if (memoria[t] != '0'){
+      e++;
+    } else {
+      e = 0;
+      t = longitud_x;
+    };
+  }
   switch (b){
           case 0x55 : // printf("rojo ganó");
                       ganador = 1;
                       i=254;
                       j=254;
+                      lado = 2;
                       break;
           case 0xAA : // printf("amarillo ganó");
                       ganador = 2;
                       i=254;
                       j=254;
+                      lado = 2;
                       break;
   };
+  if (e == longitud_x){
+    ganador = 3;
+  };
+  // Destacar
+  if (lado == 1){
+      posicion = h;
+      switch (g) {
+          case 0x55 : for (size_t f = 0; f < 4; f++) {
+                        //printf("%d %d", posicion, memoria_posicion);
+                      memoria[posicion - f] = '3';
+                      };
+                    break;
+          case 0xAA : for (size_t f = 0; f < 4; f++) {
+                        //printf("%d %d", posicion, memoria_posicion);
+                      memoria[posicion - f] = '4';
+                    };
+                    break;
+                  };
+  } else if (lado == 2){
+        switch (b) {
+            case 0x55 : for (size_t f = 0; f < 4; f++) {
+                        memoria[posicion + f*longitud_x] = '3';
+                      };
+                      break;
+            case 0xAA : for (size_t f = 0; f < 4; f++) {
+                        memoria[posicion + f*longitud_x] = '4';
+                      };
+                      break;
+                    };
+                  };
   return(ganador);
 }
 
@@ -211,19 +272,26 @@ int Ganadores (int c){
   short a = 0;
   int d = 0;
   int e = 0;
+  //int i = 0;
   //while (i == 0){
   d=0;
   //clear();
   printf("\n%c%c\t______________________________________\t%c%c", a, a, a, a);
   printf("\n%c%c\t| _________JUEGO TERMINADO___________ |\t%c%c", a, a, a, a);
   printf("\n%c%c\t| |                                 | |\t%c%c", a, a, a, a);
-  printf("\n\t| |           Ha ganado:            | |   ");
+  if (c == 3){
+      printf("\n\t| |        No hay ganadores         | |   ");
+    } else {
+      printf("\n\t| |           Ha ganado:            | |   ");
+      };
   printf("\n%c%c\t| |                                 | |\t%c%c", a, a, a, a);
   switch (c){
       case 1  :
                 printf("\n%c%c\t| |              \033[0;31mRojo\033[0;0m               | |\t%c%c", a, a, a, a);
                 break;
       case 2  : printf("\n%c%c\t| |            \033[0;33mAmarillo\033[0;0m             | |\t%c%c", a, a, a, a);
+                break;
+      case 3  : printf("\n%c%c\t| |             \033[0;34mEmpate\033[0;0m              | |\t%c%c", a, a, a, a);
                 break;
   };
   printf("\n%c%c\t| |_________________________________| |\t%c%c", a, a, a, a);
@@ -319,6 +387,7 @@ int main(){
     int Turno = 0;
     char memoria[43] = "000000000000000000000000000000000000000000";
     int posicion = 0;
+    int contador_partida = 0;
     // Variables Temporales
     int c = 0;
     // Programa
@@ -326,8 +395,9 @@ int main(){
     Pantalla_Titulo();
     Retardo(200000000);
     ScrPrnt(memoria, longitud_x, longitud_total);
+    Teclado = getch();
     while (c==0){
-        Teclado = KbdInput(Teclado, Turno, longitud_x);
+        Teclado = KbdInput(Teclado, Turno, longitud_x, contador_partida);
         Turno = WriteMemory(memoria, Teclado, Turno, longitud_x);
         //clear();
         Teclado = 0;
@@ -337,6 +407,8 @@ int main(){
             Turno = Turno ^ 0x1;
         c = Logica_interna(memoria, longitud_x, posicion, Turno);
     };
+    //clear();
+    ScrPrnt(memoria, longitud_x, longitud_total);
     Ganadores(c);
     return(0);
 }
