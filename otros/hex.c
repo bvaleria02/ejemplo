@@ -35,7 +35,7 @@ int pantalla (unsigned char a[512], char b[512], long offset, char nombre[128], 
   printf(HL_NO"\033[0;0m---------------------------------------------------------------------------------------------------------");
   for (int i = 0; i < 32; i++) {
     printf("\n\033[0;92m%08lX\t\033[0;0m", offset + (i << 4));
-    for (int j = 0; j < 33; j++) {
+    for (int j = 0; j < 34; j++) {
       if (edicion == 1){
         if (j < 16){
           if ((offset + (i<<4) + j-1) > size){
